@@ -508,7 +508,7 @@ class HTML(BaseParser):
             await asyncio.sleep(wait)
 
             if pre_script:
-                await page.evaluate(pre_script)
+                await page.evaluateOnNewDocument(pre_script)
 
             # Load the given page (GET request, obviously.)
             if reload:
