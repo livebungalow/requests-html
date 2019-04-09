@@ -508,7 +508,7 @@ class HTML(BaseParser):
             await asyncio.sleep(wait)
 
             # Allow a callable to do some additional preamble operations with page
-            if callable:
+            if preamble:
                 await preamble(page)
 
             # Load the given page (GET request, obviously.)
