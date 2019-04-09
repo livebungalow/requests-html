@@ -499,7 +499,7 @@ class HTML(BaseParser):
     def add_next_symbol(self, next_symbol):
         self.next_symbol.append(next_symbol)
 
-    async def _async_render(self, *, url: str, pre_script: str = None, script: str = None, scrolldown, sleep: int, wait: float, reload, content: Optional[str], timeout: Union[float, int], keep_page: bool):
+    async def _async_render(self, *, url: str, preamble: callable = None, script: str = None, scrolldown, sleep: int, wait: float, reload, content: Optional[str], timeout: Union[float, int], keep_page: bool):
         """ Handle page creation and js rendering. Internal use for render/arender methods. """
         try:
             page = await self.browser.newPage()
@@ -507,8 +507,9 @@ class HTML(BaseParser):
             # Wait before rendering the page, to prevent timeouts.
             await asyncio.sleep(wait)
 
-            if pre_script:
-                await page.evaluateOnNewDocument(pre_script)
+            # Allow a callable to do some additional preamble operations with page
+            if callable:
+                await preamble(page)
 
             # Load the given page (GET request, obviously.)
             if reload:
@@ -541,7 +542,7 @@ class HTML(BaseParser):
             page = None
             return None
 
-    def render(self, retries: int = 8, pre_script: str = None, script: str = None, wait: float = 0.2, scrolldown=False, sleep: int = 0, reload: bool = True, timeout: Union[float, int] = 8.0, keep_page: bool = False):
+    def render(self, retries: int = 8, preamble: callable = None, script: str = None, wait: float = 0.2, scrolldown=False, sleep: int = 0, reload: bool = True, timeout: Union[float, int] = 8.0, keep_page: bool = False):
         """Reloads the response in Chromium, and replaces HTML content
         with an updated version, with JavaScript executed.
 
@@ -598,7 +599,7 @@ class HTML(BaseParser):
             if not content:
                 try:
 
-                    content, result, page = self.session.loop.run_until_complete(self._async_render(url=self.url, pre_script=pre_script, script=script, sleep=sleep, wait=wait, content=self.html, reload=reload, scrolldown=scrolldown, timeout=timeout, keep_page=keep_page))
+                    content, result, page = self.session.loop.run_until_complete(self._async_render(url=self.url, preamble=preamble, script=script, sleep=sleep, wait=wait, content=self.html, reload=reload, scrolldown=scrolldown, timeout=timeout, keep_page=keep_page))
                 except TypeError:
                     pass
             else:
@@ -612,7 +613,7 @@ class HTML(BaseParser):
         self.page = page
         return result
 
-    async def arender(self, retries: int = 8, pre_script: str = None, script: str = None, wait: float = 0.2, scrolldown=False, sleep: int = 0, reload: bool = True, timeout: Union[float, int] = 8.0, keep_page: bool = False):
+    async def arender(self, retries: int = 8, preamble: callable = None, script: str = None, wait: float = 0.2, scrolldown=False, sleep: int = 0, reload: bool = True, timeout: Union[float, int] = 8.0, keep_page: bool = False):
         """ Async version of render. Takes same parameters. """
 
         self.browser = await self.session.browser
@@ -626,7 +627,7 @@ class HTML(BaseParser):
             if not content:
                 try:
 
-                    content, result, page = await self._async_render(url=self.url, pre_script=pre_script, script=script, sleep=sleep, wait=wait, content=self.html, reload=reload, scrolldown=scrolldown, timeout=timeout, keep_page=keep_page)
+                    content, result, page = await self._async_render(url=self.url, preamble=preamble, script=script, sleep=sleep, wait=wait, content=self.html, reload=reload, scrolldown=scrolldown, timeout=timeout, keep_page=keep_page)
                 except TypeError:
                     pass
             else:
